@@ -6,16 +6,16 @@ export default async function handler(req, res) {
     }
     
     const { uid, adminKey } = req.body;
-    const ADMIN_KEY = 'hackernet123';
-    const url = 'https://rich-dory-74324.upstash.io';
-    const token = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
-    if (adminKey !== ADMIN_KEY) {
+    if (adminKey !== 'hackernet123') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    await fetch(`${url}/del/${uid}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+    const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
+    const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
+    
+    await fetch(`${UPSTASH_URL}/del/${uid}`, {
+        headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
     });
     
     return res.status(200).json({ success: true });
