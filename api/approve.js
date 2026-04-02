@@ -6,17 +6,19 @@ export default async function handler(req, res) {
     }
     
     const { uid, days, name, adminKey } = req.body;
-    const ADMIN_KEY = 'hackernet123';
-    const url = 'https://rich-dory-74324.upstash.io';
-    const token = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
-    if (adminKey !== ADMIN_KEY) {
+    // Admin key check
+    if (adminKey !== 'hackernet123') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     
-    if (!uid || !days) {
-        return res.status(400).json({ error: 'UID and days required' });
+    if (!uid || uid.length !== 6) {
+        return res.status(400).json({ error: 'Invalid UID' });
     }
+    
+    // Upstash Database
+    const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
+    const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + parseInt(days));
@@ -29,19 +31,24 @@ export default async function handler(req, res) {
         approvedAt: new Date().toISOString()
     };
     
-    await fetch(`${url}/set/${uid}`, {
-        method: 'POST',
-        headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(JSON.stringify(userData))
-    });
-    
-    return res.status(200).json({ 
-        success: true, 
-        uid: uid, 
-        days: days, 
-        expiry: expiryDate.toISOString() 
-    });
-      }
+    try {
+        // Save to Upstash
+        await fetch(`${UPSTASH_URL}/set/${uid}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${UPSTASH_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(JSON.stringify(userData))
+        });
+        
+        return res.status(200).json({
+            success: true,
+            uid: uid,
+            days: days,
+            expiry: expiryDate.toISOString()
+        });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to save' });
+    }
+}
