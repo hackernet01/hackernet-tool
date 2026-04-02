@@ -1,5 +1,3 @@
-let approvedUIDs = {};
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
@@ -20,22 +18,31 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'UID and days required' });
     }
     
+    const allowedDays = [1, 7, 30, 90, 365];
+    if (!allowedDays.includes(days)) {
+        return res.status(400).json({ error: 'Invalid days. Allowed: 1,7,30,90,365' });
+    }
+    
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + days);
     
-    approvedUIDs[uid] = {
-        uid, days, expiry: expiryDate.toISOString(),
-        approvedAt: new Date().toISOString()
-    };
+    // Send approval notification to Telegram
+    const message = `✅ UID ${uid} APPROVED!\n📅 Access: ${days} days\n⏰ Expires: ${expiryDate.toLocaleString()}\n👤 Approved by: Admin`;
     
-    // Send confirmation to admin
-    const message = `✅ UID ${uid} APPROVED!\n📅 Access: ${days} days\n⏰ Expires: ${expiryDate.toLocaleString()}`;
+    try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: ADMIN_ID, text: message })
+        });
+    } catch(e) {
+        console.error('Telegram error:', e);
+    }
     
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: ADMIN_ID, text: message })
+    return res.status(200).json({ 
+        success: true, 
+        uid: uid, 
+        days: days, 
+        expiry: expiryDate.toISOString() 
     });
-    
-    return res.status(200).json({ success: true, uid, days, expiry: expiryDate.toISOString() });
-      }
+        }
