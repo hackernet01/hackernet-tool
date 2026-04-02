@@ -1,73 +1,44 @@
-// Complete working check.js
-let approvedUIDs = {};
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
     
     const { uid } = req.query;
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
     
-    // GET request - Check UID validity
-    if (req.method === 'GET') {
-        if (!uid || uid.length !== 6) {
-            return res.status(200).json({ valid: false, reason: 'invalid_format' });
-        }
+    if (!uid || uid.length !== 6) {
+        return res.status(200).json({ valid: false, reason: 'invalid_format' });
+    }
+    
+    try {
+        // Fetch from Redis
+        const response = await fetch(`${url}/get/${uid}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
         
-        console.log('Checking UID:', uid);
-        console.log('Approved UIDs:', approvedUIDs);
-        
-        // Check if UID is approved
-        if (approvedUIDs[uid]) {
-            const expiryDate = new Date(approvedUIDs[uid].expiry);
+        if (data.result) {
+            const userData = JSON.parse(data.result);
+            const expiryDate = new Date(userData.expiry);
+            
             if (expiryDate > new Date()) {
-                return res.status(200).json({ 
-                    valid: true, 
-                    expiry: approvedUIDs[uid].expiry, 
-                    name: approvedUIDs[uid].name 
+                return res.status(200).json({
+                    valid: true,
+                    expiry: userData.expiry,
+                    name: userData.name,
+                    days: userData.days
                 });
             } else {
-                delete approvedUIDs[uid];
+                // Expired - delete from Redis
+                await fetch(`${url}/del/${uid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                return res.status(200).json({ valid: false, reason: 'expired' });
             }
         }
         
         return res.status(200).json({ valid: false, reason: 'not_found' });
+    } catch (error) {
+        console.error('Redis error:', error);
+        return res.status(200).json({ valid: false, reason: 'error' });
     }
-    
-    // POST request - Approve new UID
-    if (req.method === 'POST') {
-        const { uid, days, name, adminKey } = req.body;
-        const ADMIN_KEY = 'byhackernet0101';
-        
-        if (adminKey !== ADMIN_KEY) {
-            return res.status(401).json({ error: 'Unauthorized' });
-        }
-        
-        if (!uid || !days) {
-            return res.status(400).json({ error: 'UID and days required' });
-        }
-        
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + parseInt(days));
-        
-        approvedUIDs[uid] = {
-            uid: uid,
-            name: name || 'User',
-            expiry: expiryDate.toISOString(),
-            approvedAt: new Date().toISOString()
-        };
-        
-        return res.status(200).json({ 
-            success: true, 
-            uid: uid, 
-            days: days, 
-            expiry: expiryDate.toISOString() 
-        });
-    }
-    
-    return res.status(405).json({ error: 'Method not allowed' });
 }
