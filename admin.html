@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - HackerNet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .stat-box h3 { font-size: 32px; margin-bottom: 5px; }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .status-active { color: #4caf50; font-weight: bold; }
+        .status-expired { color: #f44336; font-weight: bold; }
+        .status-pending { color: #ff9800; font-weight: bold; }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 2px;
+        }
+        .btn-approve { background: #4caf50; color: white; }
+        .btn-revoke { background: #f44336; color: white; }
+        .btn-small { padding: 5px 10px; font-size: 12px; }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .logs-table {
+            font-size: 13px;
+        }
+        .logs-table td {
+            word-break: break-all;
+        }
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .admin-key-input {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+        }
+        @media (max-width: 768px) {
+            th, td { font-size: 12px; padding: 8px; }
+            .header { flex-direction: column; text-align: center; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 HackerNet Admin Panel</h1>
+            <div>
+                <button class="refresh-btn" onclick="loadAllData()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔑 Admin Authentication</h2>
+            <input type="password" id="adminKey" class="admin-key-input" placeholder="Enter Admin Key" style="width: 300px;">
+            <button onclick="authenticate()" class="btn btn-approve">Login</button>
+        </div>
+
+        <div id="adminContent" style="display: none;">
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <div class="card">
+                <h2>👥 Manage UIDs</h2>
+                <div class="input-group">
+                    <input type="text" id="approveUID" placeholder="UID to approve">
+                    <select id="approveDays">
+                        <option value="1">1 Day</option>
+                        <option value="7">7 Days</option>
+                        <option value="30" selected>30 Days</option>
+                        <option value="90">3 Months</option>
+                        <option value="365">1 Year</option>
+                    </select>
+                    <button class="btn btn-approve" onclick="approveUID()">Approve</button>
+                </div>
+                <div class="table-container">
+                    <table id="uidsTable">
+                        <thead>
+                            <tr><th>UID</th><th>Name</th><th>IP</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Pending Requests</h2>
+                <div class="table-container">
+                    <table id="pendingTable">
+                        <thead><tr><th>UID</th><th>Name</th><th>IP</th><th>Requested</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📝 Search Logs (Real-time)</h2>
+                <div class="table-container">
+                    <table class="logs-table" id="logsTable">
+                        <thead><tr><th>Time</th><th>UID</th><th>Query</th><th>Type</th><th>IP</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let adminAuthenticated = false;
+
+        async function authenticate() {
+            const key = document.getElementById('adminKey').value;
+            if(key === 'hackernet123') {
+                adminAuthenticated = true;
+                document.getElementById('adminContent').style.display = 'block';
+                loadAllData();
+                setInterval(loadAllData, 10000);
+            } else {
+                alert('Invalid Admin Key');
+            }
+        }
+
+        async function loadAllData() {
+            if(!adminAuthenticated) return;
+            await Promise.all([loadUIDs(), loadPending(), loadLogs(), loadStats()]);
+        }
+
+        async function loadUIDs() {
+            const res = await fetch(`${API_BASE}/list.js`);
+            const data = await res.json();
+            const tbody = document.querySelector('#uidsTable tbody');
+            tbody.innerHTML = '';
+            data.uids?.forEach(uid => {
+                const expiry = new Date(uid.expiry);
+                const isActive = expiry > new Date();
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${uid.uid}</td><td>${uid.name || 'User'}</td><td>${uid.ip || '-'}</td>
+                    <td>${expiry.toLocaleString()}</td>
+                    <td class="${isActive ? 'status-active' : 'status-expired'}">${isActive ? 'Active' : 'Expired'}</td>
+                    <td><button class="btn btn-revoke btn-small" onclick="revokeUID('${uid.uid}')">Revoke</button></td>
+                `;
+            });
+        }
+
+        async function loadPending() {
+            const res = await fetch(`${API_BASE}/list.js?type=pending`);
+            const data = await res.json();
+            const tbody = document.querySelector('#pendingTable tbody');
+            tbody.innerHTML = '';
+            data.pending?.forEach(p => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${p.uid}</td><td>${p.name}</td><td>${p.ip}</td>
+                    <td>${new Date(p.timestamp).toLocaleString()}</td>
+                    <td>
+                        <button class="btn btn-approve btn-small" onclick="quickApprove('${p.uid}', 30)">Approve 30d</button>
+                        <button class="btn btn-approve btn-small" onclick="quickApprove('${p.uid}', 7)">7d</button>
+                    </td>
+                `;
+            });
+        }
+
+        async function loadLogs() {
+            const res = await fetch(`${API_BASE}/stats.js?type=logs`);
+            const data = await res.json();
+            const tbody = document.querySelector('#logsTable tbody');
+            tbody.innerHTML = '';
+            (data.logs || []).slice().reverse().forEach(log => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${new Date(log.time).toLocaleString()}</td>
+                    <td>${log.uid}</td><td>${log.query}</td><td>${log.type}</td><td>${log.ip}</td>
+                `;
+            });
+        }
+
+        async function loadStats() {
+            const res = await fetch(`${API_BASE}/stats.js`);
+            const data = await res.json();
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-box"><h3>${data.activeUsers || 0}</h3><p>Active Users</p></div>
+                <div class="stat-box"><h3>${data.totalUsers || 0}</h3><p>Total UIDs</p></div>
+                <div class="stat-box"><h3>${data.totalSearches || 0}</h3><p>Total Searches</p></div>
+                <div class="stat-box"><h3>${data.pendingRequests || 0}</h3><p>Pending Requests</p></div>
+            `;
+        }
+
+        async function approveUID() {
+            const uid = document.getElementById('approveUID').value.trim();
+            const days = parseInt(document.getElementById('approveDays').value);
+            if(!uid) { alert('Enter UID'); return; }
+            await fetch(`${API_BASE}/approve.js`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, days, adminKey: 'hackernet123' })
+            });
+            loadAllData();
+            document.getElementById('approveUID').value = '';
+        }
+
+        async function quickApprove(uid, days) {
+            await fetch(`${API_BASE}/approve.js`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, days, adminKey: 'hackernet123' })
+            });
+            loadAllData();
+        }
+
+        async function revokeUID(uid) {
+            if(confirm(`Revoke UID ${uid}?`)) {
+                await fetch(`${API_BASE}/revoke.js`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, adminKey: 'hackernet123' })
+                });
+                loadAllData();
+            }
+        }
+    </script>
+</body>
+</html>
