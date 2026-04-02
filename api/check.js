@@ -1,17 +1,25 @@
-// In-memory storage (Vercel serverless mein kaam karega)
+// Complete working check.js
 let approvedUIDs = {};
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
     
     const { uid } = req.query;
-    const method = req.method;
     
     // GET request - Check UID validity
-    if (method === 'GET') {
+    if (req.method === 'GET') {
         if (!uid || uid.length !== 6) {
             return res.status(200).json({ valid: false, reason: 'invalid_format' });
         }
+        
+        console.log('Checking UID:', uid);
+        console.log('Approved UIDs:', approvedUIDs);
         
         // Check if UID is approved
         if (approvedUIDs[uid]) {
@@ -23,7 +31,6 @@ export default async function handler(req, res) {
                     name: approvedUIDs[uid].name 
                 });
             } else {
-                // Expired - remove from storage
                 delete approvedUIDs[uid];
             }
         }
@@ -31,10 +38,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ valid: false, reason: 'not_found' });
     }
     
-    // POST request - Approve new UID (Admin use)
-    if (method === 'POST') {
+    // POST request - Approve new UID
+    if (req.method === 'POST') {
         const { uid, days, name, adminKey } = req.body;
-        const ADMIN_KEY = 'hackernet123';
+        const ADMIN_KEY = 'byhackernet0101';
         
         if (adminKey !== ADMIN_KEY) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -45,7 +52,7 @@ export default async function handler(req, res) {
         }
         
         const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + days);
+        expiryDate.setDate(expiryDate.getDate() + parseInt(days));
         
         approvedUIDs[uid] = {
             uid: uid,
@@ -63,4 +70,4 @@ export default async function handler(req, res) {
     }
     
     return res.status(405).json({ error: 'Method not allowed' });
-                          }
+}
