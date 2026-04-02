@@ -1,8 +1,0 @@
-{
-    "name": "hackernet-tool",
-    "version": "1.0.0",
-    "description": "SIM Database Checker with Admin Panel",
-    "scripts": {
-        "dev": "vercel dev"
-    }
-}
