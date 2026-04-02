@@ -7,7 +7,6 @@ export default async function handler(req, res) {
     
     const { uid, days, name, adminKey } = req.body;
     
-    // Admin key check
     if (adminKey !== 'hackernet123') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid UID' });
     }
     
-    // Upstash Database
     const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
     const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
@@ -31,8 +29,10 @@ export default async function handler(req, res) {
         approvedAt: new Date().toISOString()
     };
     
+    console.log('Approving UID:', uid);
+    console.log('Expiry Date:', expiryDate.toISOString());
+    
     try {
-        // Save to Upstash
         await fetch(`${UPSTASH_URL}/set/${uid}`, {
             method: 'POST',
             headers: {
@@ -49,6 +49,7 @@ export default async function handler(req, res) {
             expiry: expiryDate.toISOString()
         });
     } catch (error) {
+        console.error('Error:', error);
         return res.status(500).json({ error: 'Failed to save' });
     }
-}
+            }
