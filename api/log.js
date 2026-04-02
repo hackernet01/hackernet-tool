@@ -1,5 +1,3 @@
-let searchLogs = [];
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
@@ -8,18 +6,9 @@ export default async function handler(req, res) {
     }
     
     const { uid, query, type, ip } = req.body;
-    const BOT_TOKEN = '8201380928:AAHaYoyJeIQyev7WM9DSlkvYi1Gl2zmByDw';
-    const ADMIN_ID = '6552396222';
+    const BOT_TOKEN = process.env.BOT_TOKEN || '8201380928:AAHaYoyJeIQyev7WM9DSlkvYi1Gl2zmByDw';
+    const ADMIN_ID = process.env.ADMIN_ID || '6552396222';
     
-    const logEntry = {
-        uid, query, type, ip,
-        time: new Date().toISOString()
-    };
-    
-    searchLogs.unshift(logEntry);
-    if (searchLogs.length > 100) searchLogs.pop();
-    
-    // Send to Telegram
     const message = `🔍 SEARCH LOG\n\n🆔 UID: ${uid}\n🔎 Query: ${query}\n📱 Type: ${type}\n🌐 IP: ${ip}\n⏰ Time: ${new Date().toLocaleString()}`;
     
     try {
