@@ -14,9 +14,13 @@ export default async function handler(req, res) {
     const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
     const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
-    await fetch(`${UPSTASH_URL}/del/${uid}`, {
-        headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
-    });
-    
-    return res.status(200).json({ success: true });
+    try {
+        await fetch(`${UPSTASH_URL}/del/${uid}`, {
+            headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
+        });
+        
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to revoke' });
+    }
 }
