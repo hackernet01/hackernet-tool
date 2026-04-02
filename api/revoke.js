@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     }
     
     const { uid, adminKey } = req.body;
-    const ADMIN_KEY = process.env.ADMIN_KEY || 'byhackernet0101';
+    const ADMIN_KEY = process.env.ADMIN_KEY || 'hackernet123';
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
     const BOT_TOKEN = process.env.BOT_TOKEN || '8201380928:AAHaYoyJeIQyev7WM9DSlkvYi1Gl2zmByDw';
