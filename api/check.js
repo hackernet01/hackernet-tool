@@ -3,7 +3,6 @@ export default async function handler(req, res) {
     
     const { uid } = req.query;
     
-    // Upstash Database
     const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
     const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
@@ -12,7 +11,6 @@ export default async function handler(req, res) {
     }
     
     try {
-        // Get data from Upstash
         const response = await fetch(`${UPSTASH_URL}/get/${uid}`, {
             headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
         });
@@ -21,8 +19,13 @@ export default async function handler(req, res) {
         if (data.result) {
             const userData = JSON.parse(data.result);
             const expiryDate = new Date(userData.expiry);
+            const now = new Date();
             
-            if (expiryDate > new Date()) {
+            console.log('Checking UID:', uid);
+            console.log('Expiry:', expiryDate);
+            console.log('Now:', now);
+            
+            if (expiryDate > now) {
                 return res.status(200).json({
                     valid: true,
                     uid: uid,
@@ -31,7 +34,7 @@ export default async function handler(req, res) {
                     days: userData.days
                 });
             } else {
-                // Expired - delete it
+                // Delete expired UID
                 await fetch(`${UPSTASH_URL}/del/${uid}`, {
                     headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
                 });
@@ -39,9 +42,9 @@ export default async function handler(req, res) {
             }
         }
         
-        return res.status(200).json({ valid: false, reason: 'UID not found. Contact admin.' });
+        return res.status(200).json({ valid: false, reason: 'UID not found' });
     } catch (error) {
         console.error('Error:', error);
         return res.status(200).json({ valid: false, reason: 'Database error' });
     }
-            }
+}
