@@ -1,5 +1,11 @@
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
     
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -19,15 +25,18 @@ export default async function handler(req, res) {
     }
     
     const allowedDays = [1, 7, 30, 90, 365];
-    if (!allowedDays.includes(days)) {
+    if (!allowedDays.includes(parseInt(days))) {
         return res.status(400).json({ error: 'Invalid days. Allowed: 1,7,30,90,365' });
     }
     
     const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + days);
+    expiryDate.setDate(expiryDate.getDate() + parseInt(days));
     
-    // Send approval notification to Telegram
-    const message = `✅ UID ${uid} APPROVED!\n📅 Access: ${days} days\n⏰ Expires: ${expiryDate.toLocaleString()}\n👤 Approved by: Admin`;
+    // Store approval in check.js (shared state - for demo)
+    // In production, use a database
+    
+    // Send notification to Telegram
+    const message = `✅ UID ${uid} APPROVED!\n📅 Access: ${days} days\n⏰ Expires: ${expiryDate.toLocaleString()}\n\nUser can now access the tool with this UID.`;
     
     try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -45,4 +54,4 @@ export default async function handler(req, res) {
         days: days, 
         expiry: expiryDate.toISOString() 
     });
-        }
+}
