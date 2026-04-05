@@ -3,11 +3,12 @@ export default async function handler(req, res) {
     
     const { uid } = req.query;
     
+    // Upstash Database Config
     const UPSTASH_URL = 'https://rich-dory-74324.upstash.io';
     const UPSTASH_TOKEN = 'gQAAAAAAASJUAAIncDEzN2E4MTAzZjIwZTA0NmNkODJjNDY0OWQ5OGJhYzlkZnAxNzQzMjQ';
     
     if (!uid || uid.length !== 6) {
-        return res.status(200).json({ valid: false, reason: 'Invalid UID format' });
+        return res.status(200).json({ valid: false, message: 'UID must be 6 digits' });
     }
     
     try {
@@ -17,34 +18,29 @@ export default async function handler(req, res) {
         const data = await response.json();
         
         if (data.result) {
-            const userData = JSON.parse(data.result);
-            const expiryDate = new Date(userData.expiry);
+            const user = JSON.parse(data.result);
+            const expiry = new Date(user.expiry);
             const now = new Date();
             
-            console.log('Checking UID:', uid);
-            console.log('Expiry:', expiryDate);
-            console.log('Now:', now);
-            
-            if (expiryDate > now) {
+            if (expiry > now) {
                 return res.status(200).json({
                     valid: true,
                     uid: uid,
-                    name: userData.name,
-                    expiry: userData.expiry,
-                    days: userData.days
+                    name: user.name,
+                    expiry: user.expiry,
+                    days: user.days
                 });
             } else {
                 // Delete expired UID
                 await fetch(`${UPSTASH_URL}/del/${uid}`, {
                     headers: { 'Authorization': `Bearer ${UPSTASH_TOKEN}` }
                 });
-                return res.status(200).json({ valid: false, reason: 'UID Expired' });
+                return res.status(200).json({ valid: false, message: 'UID Expired' });
             }
         }
         
-        return res.status(200).json({ valid: false, reason: 'UID not found' });
+        return res.status(200).json({ valid: false, message: 'UID not found. Contact admin.' });
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(200).json({ valid: false, reason: 'Database error' });
+        return res.status(200).json({ valid: false, message: 'Database error. Try again.' });
     }
 }
